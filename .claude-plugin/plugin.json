@@ -1,6 +1,6 @@
 {
   "name": "google-ads-ppc-waste-finder",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Find wasted Google Ads spend fast: pulls the last 7 days of search terms via the Optmyzr MCP, flags high-spend zero-conversion queries, separates true waste from brand/competitor traffic, estimates monthly savings, and returns a ranked table plus a ready-to-paste negative keyword list. Powered by Optmyzr.",
   "author": {
     "name": "Optmyzr Inc.",

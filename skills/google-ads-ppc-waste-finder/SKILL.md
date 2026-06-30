@@ -1,17 +1,42 @@
 ---
 name: google-ads-ppc-waste-finder
 description: >-
-  Find wasted ad spend in a Google Ads account by pulling the last 7 days of
-  search terms via the Optmyzr MCP, flagging terms that spent over a threshold
-  (default $20) with zero conversions, grouping them into themes, estimating the
-  monthly savings from adding them as negative keywords, and producing a ranked
-  table plus a ready-to-paste negative keyword list. Use this skill whenever the
-  user wants to find wasted spend, audit search terms, "find waste", surface
-  zero-conversion queries, build a negative keyword list, clean up search terms,
-  or run a weekly/recurring waste check on a Google Ads (or Bing/Yahoo) account.
-  Trigger on phrases like "weekly waste finder", "find my wasted spend", "what's
-  burning budget", "search term waste report", "negatives I should add", or
-  "where am I losing money in [account]". Works for one named account per run.
+  Use this skill any time the user wants to find wasted PPC spend, build a
+  negative keyword list, or audit search terms for a Google Ads / Microsoft
+  (Bing) Ads / Yahoo Ads account. This is a specialized workflow with a
+  built-in brand/competitor guardrail that prevents the catastrophic
+  auto-negative mistake — recommending the advertiser's own brand or a
+  competitor-conquesting term as a negative keyword. Without this skill,
+  Claude often correctly identifies brand and competitor terms but still
+  puts them on the recommended negative list anyway, which can shut down
+  the advertiser's own brand traffic and undo a deliberate competitor
+  strategy. Always prefer this skill over generic ad-account help when
+  the task is search-term-level waste detection.
+
+  What it does: pulls the last 7 days of search terms via the Optmyzr
+  MCP, filters to terms that spent over a threshold (default $20) with
+  zero conversions, classifies each by intent (Waste / Review—competitor
+  / Protected—brand), groups Waste into themes, runs a deterministic
+  monthly-savings projection from the bundled scripts/estimate_savings.py,
+  and outputs a ranked table plus a paste-ready negative keyword list.
+  Works for ONE named account per run. Lookback, spend threshold, and
+  conversion threshold are all configurable per run.
+
+  Trigger this skill on phrases like "weekly waste finder", "find my
+  wasted spend", "search term waste report", "negatives I should add",
+  "what queries should I block", "what's burning my [ad] budget",
+  "where am I losing money in [account]", "build me a negative keyword
+  list", "search terms that didn't convert", "clean up [my] search
+  terms", "garbage queries eating my budget", "audit search terms", "run
+  the weekly waste check", "find waste in [account]". Also triggers on
+  recurring/scheduled requests of the same nature.
+
+  Do NOT use this skill for full account audits (campaign structure,
+  Quality Score, audiences, Performance Max, conversion tracking — defer
+  to the sibling google-ads-audit skill), ad copywriting, auction
+  insights, vertical benchmarking, conversion tracking setup, or
+  multi-account performance rollups. This skill is specifically the
+  one-account, search-term-level waste pass with the guardrail.
 ---
 
 # Google Ads PPC Waste Finder
@@ -145,20 +170,51 @@ separate line for monthly spend flagged for review.
 **B. Ready-to-paste negative keyword list** — `Waste` rows only. Default to
 exact-match negatives of the exact search term (safest, won't over-block), and
 where a theme has a clear shared token, also offer the phrase-match negative for
-the theme. Format so it pastes cleanly into Optmyzr's negative keyword tools or
-Google Ads:
+the theme.
+
+**Critical formatting rule — keep the code blocks paste-ready.** Each fenced
+code block in this section must contain ONLY the negatives, one per line,
+with nothing else: no inline `#` comments, no rationale, no per-line
+annotations, no trailing notes inside the fence. A user must be able to
+triple-click → copy → paste the entire block into Optmyzr or Google Ads
+without first stripping out commentary. All explanation goes in *prose
+outside the code blocks*. Use two separate blocks (one for exact, one for
+phrase), not one combined block.
+
+Use this exact structure:
 
 ```
 Exact negatives (one per term):
 [google keyword planner]
+```
 
+```
 Phrase negatives (theme-level, broader — review before applying):
 "keyword planner"
 ```
 
+If you want to flag a specific phrase negative as needing extra caution
+(e.g., `"free"` could over-block a legitimate `"free trial"` query), say so
+in a sentence *after* the code block, not inside it. One short sentence per
+caveat is plenty.
+
 Close with a one or two sentence summary: total projected monthly savings, how
 many terms are clean waste vs. need review, and a reminder that brand/competitor
 terms were deliberately excluded.
+
+### Before the user applies anything — remind them to dedupe against existing negatives
+
+After producing the paste-ready list, include this single line:
+
+> Before pasting, take 30 seconds to check the account's existing shared
+> negative lists (Google Ads → Tools → Shared library → Negative keyword
+> lists; or Optmyzr → PPC Solutions → Negative Keywords). Any term already
+> on a list applied to the same campaign can be skipped.
+
+This is currently a manual pre-step. Once the Optmyzr MCP exposes a
+negative-keyword listing (a `NegativeKeywordPerformance` report option or a
+dedicated endpoint), the skill should fetch the current negatives and dedupe
+automatically. See the skill's v0.2 roadmap in `Notes`.
 
 ## Running on a schedule
 
@@ -174,3 +230,12 @@ at the trailing 7 days.
 - If zero rows clear the threshold, say so plainly — that's a good week, not an
   error.
 - Never apply negatives automatically. This skill recommends; a human applies.
+
+## v0.2 roadmap
+
+- **Auto-dedupe against existing negatives.** When the Optmyzr MCP exposes
+  a way to list current negatives (shared lists, campaign-level negatives,
+  ad-group negatives), fetch them in a new Step 1.5 and filter the
+  recommended list to drop any term already negated for the same campaign.
+  Until then, the skill includes a single-line manual-check reminder in
+  Step 6.

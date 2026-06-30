@@ -9,3 +9,6 @@ __pycache__/
 .idea/
 .vscode/
 dist/
+
+# Eval workspace (local-only)
+google-ads-ppc-waste-finder-workspace/
